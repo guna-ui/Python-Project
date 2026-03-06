@@ -1,13 +1,12 @@
 import requests
 
-api='https://api.github.com/search/repositories?q=data+engineering&sort=stars&page=1'
 
-def fetch_api():
+def fetch_api(page):
     all_data=[]
-    try:
+    try:      
+        api=f'https://api.github.com/search/repositories?q=data+engineering&sort=stars&page={page}'
         response=requests.get(api)
         response.raise_for_status()
-        total_count=response.json()['total_count']
         items=response.json()['items']
         for results in items:
             repo_data={
@@ -20,7 +19,8 @@ def fetch_api():
                 "create_at":results['created_at'],
                 "html_url":results['html_url']              
            } 
-            all_data.append(repo_data)   
+            all_data.append(repo_data)
+        # page=page+1
         return all_data
 
     except:
@@ -29,5 +29,11 @@ def fetch_api():
 
 
 if __name__=="__main__":
-    data=fetch_api()
-    print(f"Total repositories fetched:{len(data)}")
+    page=1
+    total_count=0
+    while(page<=5):
+     data=fetch_api(page)
+     total_count=total_count+len(data)
+     print(f"Page{page} fetched {len(data)}")
+     page=page+1
+    print(f"Total repositories fetch:{total_count}")
