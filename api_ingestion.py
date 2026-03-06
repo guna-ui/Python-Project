@@ -1,4 +1,28 @@
 import requests
+import sqlite3
+
+def create_table():
+    connection=sqlite3.connect('github_data.db')
+    try:
+        cursor=connection.cursor()
+        create_table_query = """
+        CREATE TABLE IF NOT EXISTS github_repositories (
+            repo_id INTEGER PRIMARY KEY ,
+            repo_name TEXT NOT NULL,
+            owner TEXT NOT NULL,
+            stargazers INTEGER NOT NULL,         
+            forks_count INTEGER NOT NULL,
+            language TEXT NOT NULL,
+            repo_year TEXT NOT NULL,
+            html_url TEXT NOT NULL
+        );
+        """
+        cursor.execute(create_table_query)
+        connection.commit()
+    except sqlite3.Error as e:
+        print("error while creating database:{e}")
+    finally:
+        connection.close()
 
 def fetch_api(page):
     all_data=[]
@@ -55,14 +79,50 @@ def check_duplicates(data):
             clean_repositories.append(repo)
 
     print(f"Total Records collected: {len(data)}, unique records: {len(clean_repositories)}")
-    print("First 2 records:", clean_repositories[:2])
+    # print("First 2 records:", clean_repositories[:2])
 
     return clean_repositories
    
-    
+def data_ingestion(data):
+    connection=sqlite3.connect('github_data.db')
+    bulk_data=[]
+    try:
+      cursor=connection.cursor()
+      for value in data:
+              repo_id=value['repo_id']
+              repo_name=value['repo_name']
+              owner=value['owner']
+              stargazers=value['stargazers']
+              forks_count=value['forks_count']
+              language=value['language']
+              repo_year=value['create_at']
+              html_url=value['html_url']
+              results=(repo_id,repo_name,owner,stargazers,forks_count,language,repo_year,html_url)
+            # bulk_data.extend(results)
+              bulk_data.append(results)
+      insert_query="""insert into github_repositories(repo_id,repo_name,owner,stargazers,forks_count,language,repo_year,html_url)
+                       values(?,?,?,?,?,?,?,?)"""
+      cursor.executemany(insert_query,bulk_data) 
+      connection.commit() 
+      print("successfully inserted all the data")
+    except sqlite3.Error as e:
+        print(f"error occurred:{e}")
+    finally:
+        connection.close()
 
+
+#               repo_id=value['repo_id']
+#               repo_name=value['repo_name']
+#               owner=value['owner']
+#               stargazers=value['stargazers']
+#               forks_count=value['forks_count']
+#               language=value['language']
+#               create_dt=value['create_at']
+#               html_url=value['html_url']
+#               results=(repo_id,repo_name,owner,stargazers,forks_count,language,create_dt,html_url)
 
 if __name__=="__main__":
+    create_table()
     page=1
     all_repositories=[]
     while(page<=5):
@@ -72,5 +132,5 @@ if __name__=="__main__":
         page=page+1
     print(f"Total repositories fetch:{len(all_repositories)}")
     new_data= check_duplicates(all_repositories)
-    print(new_data) 
+    data_ingestion(new_data)
     
