@@ -1,5 +1,6 @@
 import requests
 import sqlite3
+import analytics
 
 def create_table():
     connection=sqlite3.connect('github_data.db')
@@ -133,4 +134,4 @@ if __name__=="__main__":
     print(f"Total repositories fetch:{len(all_repositories)}")
     new_data= check_duplicates(all_repositories)
     data_ingestion(new_data)
-    
+    analytics.run_analytics()
